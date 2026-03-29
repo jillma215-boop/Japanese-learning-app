@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日本語学習アシスタント</title>
+    <style>
+        /* --- 1. 基本設定 & 変数 --- */
+        :root {
+            --primary-color: #4A90E2;    /* メインブルー */
+            --primary-hover: #357ABD;
+            --accent-color: #50C878;     /* グリーン */
+            --bg-color: #F8F9FA;         /* 背景 */
+            --card-bg: #FFFFFF;          /* カード背景 */
+            --text-main: #2C3E50;        /* メインテキスト */
+            --text-sub: #7F8C8D;         /* サブテキスト */
+            --border-color: #E0E0E0;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: "Hiragino Kaku Gothic ProN", "Meiryo", "Microsoft YaHei", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        /* --- 2. レイアウト --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+        }
+
+        /* メインコンテンツ（左側） */
+        .main-content {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* サイドバー（右側） */
+        .sidebar {
+            flex: 1;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            height: fit-content;
+        }
+
+        /* --- 3. コンポーネント --- */
+        /* ヘッダー */
+        header {
+            margin-bottom: 10px;
+        }
+        header h1 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        /* 入力エリア */
+        .input-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            resize: vertical;
+            box-sizing: border-box;
+            font-family: inherit;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        textarea:focus {
+            border-color: var(--primary-color);
+        }
+
+        .btn-group {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 30px;
+            box-shadow: 0 4px 10px rgba(74, 144, 226, 0.3);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: #fff;
+            border: 1px solid var(--border-color);
+            color: var(--text-sub);
+            padding: 12px 20px;
+        }
+
+        .btn-secondary:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* 結果エリア */
+        .result-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: none; /* 初期状態は非表示 */
+        }
+
+        .result-card.active {
+            display: block;
+        }
+
+        /* タブ */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            background: #fafafa;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: none;
+            color: var(--text-sub);
+            border-radius: 0;
+            box-shadow: none;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-btn:hover {
+            background: #f0f0f0;
+            transform: none;
+            color: var(--text-main);
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+            background: #fff;
+        }
+
+        /* タブコンテンツ */
+        .tab-content {
+            padding: 25px;
+            min-height: 200px;
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 学習履歴 */
+        .history-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            margin-top: 6px;
+            flex-shrink: 0;
+        }
+        .history-text h4 {
+            margin: 0 0 5px 0;
+            font-size: 0.95rem;
+        }
+        .history-text p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-sub);
+        }
+
+        /* ローディング */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 結果内のスタイル */
+        .result-content h3 {
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+            padding-left: 10px;
+            margin-top: 0;
+        }
+        .highlight {
+            background-color: #e3f2fd;
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #1565c0;
+            font-weight: bold;
+        }
+
+        /* レスポンシブ */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .sidebar {
+                order: 2;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- メインコンテンツ -->
+    <div class="main-content">
+        <header>
+            <h1>🗾 日本語学習アシスタント</h1>
+        </header>
+
+        <!-- 入力エリア -->
+        <section class="input-card">
+            <textarea id="userInput" placeholder="ここに日本語の文章を入力してください"></textarea>
+            <div class="btn-group">
+                <button id="analyzeBtn" class="btn-primary">分析を実行</button>
+                <button id="clearBtn" class="btn-secondary">クリア</button>
+            </div>
+        </section>
+
+        <!-- ローディング -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>AI が分析中...</p>
+        </div>
+
+        <!-- 結果エリア -->
+        <section id="resultSection" class="result-card">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="translation">📖 翻译</button>
+                <button class="tab-btn" data-tab="grammar">📝 文法</button>
+                <button class="tab-btn" data-tab="vocabulary">🎓 N1</button>
+                <button class="tab-btn" data-tab="examples">💡 例文</button>
+            </div>
+            
+            <div class="tab-content">
+                <div id="translation" class="tab-pane active"><div class="result-content"></div></div>
+                <div id="grammar" class="tab-pane"><div class="result-content"></div></div>
+                <div id="vocabulary" class="tab-pane"><div class="result-content"></div></div>
+                <div id="examples" class="tab-pane"><div class="result-content"></div></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- サイドバー -->
+    <aside class="sidebar">
+        <h3>学習履歴</h3>
+        <div id="historyList">
+            <!-- 履歴が JS で追加されます -->
+            <div class="history-item">
+                <div class="status-dot"></div>
+                <div class="history-text">
+                    <h4>「敬語の使い方」を学習しました</h4>
+                    <p>已学习敬语用法</p>
+                </div>
+            </div>
+            <div class="history-item">
+                <div class="status-dot"></div>
+                <div class="history-text">
+                    <h4>N1 文法テストを完了</h4>
+                    <p>已完成 N1 语法测试</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<script>
+    // --- 1. 変数定義 ---
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const userInput = document.getElementById('userInput');
+    const loading = document.getElementById('loading');
+    const resultSection = document.getElementById('resultSection');
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    const historyList = document.getElementById('historyList');
+
+    // --- 2. タブ切り替えロジック ---
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // ボタンのアクティブ状態切り替え
+            tabBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // コンテンツの表示切り替え
+            const targetId = btn.getAttribute('data-tab');
+            tabPanes.forEach(pane => {
+                pane.classList.remove('active');
+                if (pane.id === targetId) {
+                    pane.classList.add('active');
+                }
+            });
+        });
+    });
+
+    // --- 3. 分析実行ロジック ---
+    analyzeBtn.addEventListener('click', async () => {
+        const text = userInput.value.trim();
+        if (!text) {
+            alert('日本語の文章を入力してください！');
+            return;
+        }
+
+        // UI 状態更新
+        loading.style.display = 'block';
+        resultSection.classList.remove('active');
+
+        try {
+            // API 呼び出しシミュレーション（実際はここで fetch を使用）
+            const data = await mockApiCall(text);
+            
+            // 結果表示
+            renderResults(data);
+            
+            // 履歴に追加
+            addHistory(text);
+
+        } catch (error) {
+            console.error(error);
+            alert('エラーが発生しました。');
+        } finally {
+            loading.style.display = 'none';
+            resultSection.classList.add('active');
+        }
+    });
+
+    // クリアボタン
+    clearBtn.addEventListener('click', () => {
+        userInput.value = '';
+        resultSection.classList.remove('active');
+        userInput.focus();
+    });
+
+    // --- 4. 結果描画関数 ---
+    function renderResults(data) {
+        document.querySelector('#translation .result-content').innerHTML = `<h3>中文翻译</h3><p>${data.translation}</p>`;
+        
+        let grammarHtml = '<h3>文法解説</h3><ul>';
+        data.grammar.forEach(g => {
+            grammarHtml += `<li><span class="highlight">${g.term}</span>: ${g.explanation}</li>`;
+        });
+        grammarHtml += '</ul>';
+        document.querySelector('#grammar .result-content').innerHTML = grammarHtml;
+
+        let vocabHtml = '<h3>N1 語彙チェック</h3>';
+        if (data.vocabulary.length > 0) {
+            vocabHtml += '<ul>';
+            data.vocabulary.forEach(v => {
+                vocabHtml += `<li><span class="highlight">${v.kanji}</span> (${v.kana}): ${v.meaning}</li>`;
+            });
+            vocabHtml += '</ul>';
+        } else {
+            vocabHtml += '<p>N1 レベルの語彙はありませんでした。</p>';
+        }
+        document.querySelector('#vocabulary .result-content').innerHTML = vocabHtml;
+
+        let exampleHtml = '<h3>例文生成</h3>';
+        data.examples.forEach((ex, index) => {
+            exampleHtml += `<div style="margin-bottom:15px;">
+                <p><strong>例 ${index + 1}:</strong> ${ex.jp}</p>
+                <p style="color:#666;">${ex.cn}</p>
+            </div>`;
+        });
+        document.querySelector('#examples .result-content').innerHTML = exampleHtml;
+    }
+
+    // --- 5. 履歴追加関数 ---
+    function addHistory(text) {
+        const shortText = text.length > 20 ? text.substring(0, 20) + '...' : text;
+        const now = new Date().toLocaleDateString('ja-JP');
+        
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerHTML = `
+            <div class="status-dot"></div>
+            <div class="history-text">
+                <h4>「${shortText}」を分析</h4>
+                <p>${now}</p>
+            </div>
+        `;
+        // 最初に追加
+        historyList.insertBefore(item, historyList.firstChild);
+    }
+
+    // --- 6. モック API 関数（実際はここを API 通信に置き換え） ---
+    function mockApiCall(text) {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                resolve({
+                    translation: "这是示例翻译。实际使用时将显示 AI 生成的中文翻译。",
+                    grammar: [
+                        { term: "〜てください", explanation: "表示请求对方做某事。" },
+                        { term: "〜ます", explanation: "动词礼貌体（丁寧語）。" }
+                    ],
+                    vocabulary: [
+                        { kanji: "分析", kana: "ぶんせき", meaning: "分析" },
+                        { kanji: "実行", kana: "じっこう", meaning: "执行" }
+                    ],
+                    examples: [
+                        { jp: "このボタンを押して分析を実行してください。", cn: "请按这个按钮执行分析。" },
+                        { jp: "日本語の学習を継続することが重要です。", cn: "持续学习日语很重要。" }
+                    ]
+                });
+            }, 1500); // 1.5 秒延迟模拟
+        });
+    }
+
+    /* 
+    // --- 参考：実際の API 接続用コード例 ---
+    async function realApiCall(text) {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer YOUR_API_KEY'
+            },
+            body: JSON.stringify({
+                model: "gpt-3.5-turbo",
+                messages: [{role: "user", content: "分析この文：" + text}]
+            })
+        });
+        return await response.json();
+    }
+    */
+</script>
+
+</body>
+</html>
